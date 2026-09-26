@@ -1,0 +1,42 @@
+==================================================================
+           ANÁLISIS TÉCNICO Y DESCRIPCIÓN DE LA ESTRUCTURA EN SQLITE
+==================================================================
+
+1. DIAGNÓSTICO DEL ESQUEMA Y TIPOS DE DATOS (DATA TYPES)
+------------------------------------------------------------------
+El mapeo de datos desde Pandas hacia SQLite ha estructurado la tabla 'ventas_retail' utilizando tres tipos de almacenamiento principales: TEXT, INTEGER y REAL. A continuación se describe el significado técnico y analítico de esta estructura:
+
+* TEXT (Cadenas de caracteres):
+  - 'InvoiceNo' y 'StockCode': Son llaves alfanuméricas maestras. Se almacenan como texto porque pueden contener letras (ej. prefijos 'C' de cancelaciones o letras de inventario).
+  - 'Description' y 'Country': Datos categóricos puros descriptivos.
+  - 'AUX1' y 'AUX2': Campos de auditoría de texto para aislar sufijos y transacciones atípicas.
+  - 'AñoMes' y 'Fecha': Almacenados como texto (formato ISO/estándar). SQLite no posee un tipo de dato 'DATE' nativo, por lo que convertirlos a TEXT es la mejor práctica para garantizar filtros alfabéticos ordenados consistentes.
+
+* INTEGER (Números enteros discretos):
+  - 'Quantity': Cantidades físicas de productos comprados o devueltos.
+  - 'InvoiceNo_C': Variable binaria (indicador o flag) donde 1 es Cancelado y 0 es Normal.
+  - 'Hora': Variable numérica de tiempo discreto (0 a 23).
+
+* REAL (Números de punto flotante / decimales):
+  - 'UnitPrice': Precio unitario del producto. Requiere precisión decimal.
+  - 'CustomerID': Almacenado como REAL debido a la presencia de valores nulos (NaN en Pandas se traduce a floats). Esto es un comportamiento normal de conversión de tipos.
+  - 'InvoiceNoN' y 'StockCodeV': Almacenados como REAL en SQLite para poder retener compatibilidad con celdas vacías del dataset original.
+
+* TIMESTAMP (Fecha y hora con zona horaria):
+  - 'InvoiceDate': Conserva la estampa de tiempo transaccional exacta para análisis cronológico detallado.
+
+* Restricciones (Obligatorio y dflt_value):
+  - Todas las columnas muestran 'Obligatorio = 0' y 'dflt_value = None', lo que significa que la tabla es flexible en base de datos: permite celdas vacías (NULL) sin restricciones de obligatoriedad (NOT NULL) ni valores por defecto aplicados a nivel de motor.
+
+2. ANÁLISIS DEL CONTEO DE REGISTROS Y CALIDAD DE DATOS
+------------------------------------------------------------------
+* Volumen Total (Total_Filas: 541,909):
+  - Indica un set de datos denso y robusto, correspondiente al histórico transaccional masivo de una plataforma de comercio electrónico activa.
+
+* Segmentación y Brecha de Clientes (Clientes_No_Nulos vs Clientes_Nulos):
+  - Clientes_No_Nulos: 406,829 filas tienen un ID de cliente asociado.
+  - Clientes_Nulos: 135,080 filas carecen de ID de cliente.
+  - Significado Analítico: El 24.93% de las transacciones del negocio son realizadas por usuarios invitados o anónimos. Es un indicador clave para estrategias de fidelización, ya que 1 de cada 4 compras no puede rastrearse directamente a un perfil de cliente específico.
+
+* Alcance de Mercado (Paises_Unicos: 38):
+  - Confirma que se trata de una operación internacional con presencia en 38 mercados diferentes globales. Permite análisis de geolocalización y segmentación de ingresos transfronterizos.
